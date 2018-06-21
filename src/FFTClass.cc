@@ -52,16 +52,7 @@ const vector<double>* FFTClass::GetPhases()
     if(vars_["phase"].size() == 0)
     {
         for(unsigned int i=0; i<vars_["re"].size(); ++i)
-        {
-            //---note that re==0 && im==0 is not contemplated.
-            float sign = (vars_["im"][i]>0 ? 1 : -1);
-            if(vars_["re"][i] == 0)
-                vars_["phase"].push_back(sign*TMath::Pi()/2.);
-            else if(vars_["re"][i] > 0)
-                vars_["phase"].push_back(atan(vars_["im"][i]/vars_["re"][i]));
-            else
-                vars_["phase"].push_back(atan(vars_["im"][i]/vars_["re"][i])+sign*TMath::Pi());
-        }
+            vars_["phase"].push_back(atan2(vars_["im"][i], vars_["re"][i]));
     }
 
     return &vars_["phase"];

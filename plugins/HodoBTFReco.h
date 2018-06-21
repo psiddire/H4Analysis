@@ -18,6 +18,7 @@ public:
     //---utils---
     bool Begin(CfgManager& opts, uint64* index);
     bool ProcessEvent(const H4Tree& h4Tree, map<string, PluginBase*>& plugins, CfgManager& opts);
+    bool End(CfgManager& opts) { return true; };
     
 private:
     map<int, int> ADC_to_PMT_map;

@@ -47,7 +47,7 @@ bool FFTAnalyzer::Begin(CfgManager& opts, uint64* index)
         }
     }
 
-    //---create and register templates histograms
+    //---create and register templates istograms
     //   histograms are created with automatic binning alog Y axis
     if(fftType_ == "T2F" && opts.OptExist(instanceName_+".makeTemplates"))
         templatesNames_ =  opts.GetOpt<vector<string> >(instanceName_+".makeTemplates");
@@ -138,24 +138,10 @@ bool FFTAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
             if(opts.OptExist(instanceName_+".normalizeInput") && opts.GetOpt<bool>(instanceName_+".normalizeInput"))
             {
                 float max = *std::max_element(samples_norm.begin(), samples_norm.end());
-                for(auto& sample : samples_norm){
-		  sample /= max;
-		}
-	    }
+                for(auto& sample : samples_norm)
+                    sample /= max;
+            }
             //---build the FFT
-<<<<<<< HEAD
-            double Re[n_samples], Im[n_samples];
-            auto fftr2c = TVirtualFFT::FFT(1, &n_samples, "R2C");
-	    //cout << "samples_norm.data(): " << *samples_norm.data() << endl;
-	    //for(auto& sample : samples_norm)
-	    //  cout <<  "sample: " << sample << endl;
-	    fftr2c->SetPoints(samples_norm.data());
-            fftr2c->Transform();
-            fftr2c->GetPointsComplex(Re, Im);
-	    //for(int i=0; i<500; i++)
-	    //  cout << "Re and Im: " << *(Re+i) << " " << *(Im+i) << endl;
-            FFTs_[channel]->SetPointsComplex(n_samples/2, Re, Im);
-=======
             double iRe[n_samples], iIm[n_samples], oRe[n_samples], oIm[n_samples];
             int first_sample = opts.GetOpt<int>(channel+".signalWin", 0);
             int last_sample = opts.GetOpt<int>(channel+".signalWin", 1);
@@ -174,7 +160,6 @@ bool FFTAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
                 oIm[i] /= n_samples;
             }
             FFTs_[channel]->SetPointsComplex(n_samples, oRe, oIm);
->>>>>>> a2f73abde712109f6c842f2f948da4d7bae37f2a
             map<string, const double*> var_map;
             var_map["Re"] = oRe;
             var_map["Im"] = oIm;
@@ -191,20 +176,11 @@ bool FFTAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
                     {
                         int index =  channelsMap_[channel] * n_samples + k;
                         current_ch_[index] = channelsMap_[channel];
-<<<<<<< HEAD
-                        freqs_[index] = (k%(n_samples/2));
-                        re_[index] = Re[index];
-			im_[index] = Im[index];
-			amplitudes_[index] = var_map["Ampl"][k];
-			phases_[index] = var_map["Phase"][k];
-			//cout << "Real " << Re[index] <<  "Imaginary " << Im[index] <<  "Amplitude " << var_map["Ampl"][k] << "Phase " << var_map["Phase"][k] << endl;
-=======
                         freqs_[index] = (k%(n_samples));
                         re_[index] = oRe[index];
                         im_[index] = oIm[index];
                         amplitudes_[index] = var_map["Ampl"][k];
                         phases_[index] = var_map["Phase"][k];
->>>>>>> a2f73abde712109f6c842f2f948da4d7bae37f2a
                     }
                 }
             }
