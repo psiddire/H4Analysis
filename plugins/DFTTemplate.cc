@@ -69,14 +69,12 @@ bool DFTTemplate::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
         for(unsigned int i=1; i<=ampl_spectrum.GetNbinsX(); ++i)
             ampl_spectrum.SetBinContent(i, sqrt(pow(Re.at(Re.size()/4+i-1), 2)+pow(Im.at(Im.size()/4+i-1), 2)));
         ampl_spectrum.Fit(&ampl_extrapolation, "QRSO");
-<<<<<<< HEAD
 	cout << " No of samples " << n_samples << endl;
         while(Re.size() < n_samples/2)
         {
 	  //cout << "Push Back " << ampl_extrapolation.Eval(Re.size()/oversamplingMap_[channel].second)/100000. << endl;
 	  Re.push_back(ampl_extrapolation.Eval(Re.size()/oversamplingMap_[channel].second)/100000.);
 	  Im.push_back(0.);
-=======
         while(Re.size() < n_samples)
         {
             Re.insert(Re.begin()+(Re.size()/2), 2,
@@ -95,7 +93,6 @@ bool DFTTemplate::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
             }
             else                
                 Im.insert(Im.begin()+(Im.size()/2), 2, 0.);
->>>>>>> a2f73abde712109f6c842f2f948da4d7bae37f2a
         }
         //---construct FFT and oversampled WF
         auto fftc2r = TVirtualFFT::FFT(1, &n_samples, "C2R");
