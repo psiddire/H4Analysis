@@ -124,6 +124,7 @@ bool HodoReco::ProcessEvent(const H4Tree& h4Tree, map<string, PluginBase*>& plug
         if(opts.OptExist(instanceName_+".hodoCorrection.hodoAlignOffset",i))
             offset=opts.GetOpt<float>("H4Hodo.hodoCorrection.hodoAlignOffset",i);
 
+	//hodoTree_.fibers[i] = fibersOn[i].size(); 
         if(fibersOn[i].size() == 1)
             value = 0.5 * (fibersOn[i].at(0) - 32.);
         else if(fibersOn[i].size() == 2)
@@ -143,13 +144,15 @@ bool HodoReco::ProcessEvent(const H4Tree& h4Tree, map<string, PluginBase*>& plug
             if(fabs(vals.at(1)-vals.at(0)) == 1 && fabs(vals.at(2)-vals.at(1)) == 1) 
                 value = 0.5 * (vals.at(1) - 32.);
         }
-        if(i%2 == 0){
+	if ((value + offset) > -25 && (value + offset) < 25){
+	  if(i%2 == 0){
             hodoTree_.X[i/nPlanes_] = value + offset;
             hodoTree_.nFibresOnX[i/nPlanes_]=fibersOn[i].size();	
-        } else{
+	  } else{
             hodoTree_.Y[i/nPlanes_] = value + offset;
             hodoTree_.nFibresOnY[i/nPlanes_]=fibersOn[i].size();	
-        }
+	  }
+	}
     }
     //---fill output tree
     hodoTree_.Fill();

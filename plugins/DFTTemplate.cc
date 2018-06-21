@@ -43,6 +43,8 @@ bool DFTTemplate::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
         Re.assign(fft->GetRe()->data(), fft->GetRe()->data()+fft->GetRe()->size());
         Im.assign(fft->GetIm()->data(), fft->GetIm()->data()+fft->GetIm()->size());        
         //---not so general FIXME
+	cout << "fftGetRe " << fft->GetRe()->size() << endl;
+	cout << "Limits " << Re.size()/2./oversamplingMap_[channel].second << " " << Re.size()/oversamplingMap_[channel].second << " " << Re.size()/oversamplingMap_[channel].first << endl;
         TH1D ampl_spectrum("ampl_spectrum", "",
                            Re.size()/2.,
                            Re.size()/2./oversamplingMap_[channel].second,
@@ -51,10 +53,12 @@ bool DFTTemplate::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
         for(unsigned int i=1; i<=ampl_spectrum.GetNbinsX(); ++i)
             ampl_spectrum.SetBinContent(i, sqrt(pow(Re.at(Re.size()/2+i-1), 2)+pow(Im.at(Im.size()/2+i-1), 2)));
         ampl_spectrum.Fit(&ampl_extrapolation, "QRSO");
+	cout << " No of samples " << n_samples << endl;
         while(Re.size() < n_samples/2)
         {
-            Re.push_back(ampl_extrapolation.Eval(Re.size()/oversamplingMap_[channel].second)/100000.);
-            Im.push_back(0.);
+	  //cout << "Push Back " << ampl_extrapolation.Eval(Re.size()/oversamplingMap_[channel].second)/100000. << endl;
+	  Re.push_back(ampl_extrapolation.Eval(Re.size()/oversamplingMap_[channel].second)/100000.);
+	  Im.push_back(0.);
         }
         //---construct FFT and oversampled WF
         auto fftc2r = TVirtualFFT::FFT(1, &n_samples, "C2R");

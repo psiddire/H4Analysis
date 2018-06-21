@@ -35,6 +35,7 @@ public:
     int*  nFibresOnY;
     float* X;
     float* Y;
+    //    int* fibers;
 };
 
 #endif

@@ -79,8 +79,8 @@ pair<TH1F, TH1F> DFT_cut(TH1F* inWave, string name, float fCut)
         { 
 	  if(k > fCut)
 	    continue;
-            float angle = 2 * TMath::Pi() * t * k / nbins; 
-	    recoWave += Re[k]*cos(angle) - Im[k]*sin(angle);
+          float angle = 2 * TMath::Pi() * t * k / nbins; 
+	  recoWave += Re[k]*cos(angle) - Im[k]*sin(angle);
 	}  
 	outWave.SetBinContent(t, recoWave);
     }

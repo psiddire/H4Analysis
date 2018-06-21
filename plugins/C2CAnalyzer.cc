@@ -1,12 +1,12 @@
-#include "FFTAnalyzer.h"
+#include "C2CAnalyzer.h"
 
 //----------Constructor-------------------------------------------------------------------
-FFTAnalyzer::FFTAnalyzer():
+C2CAnalyzer::C2CAnalyzer():
     n_tot_(0)
 {}
 
 //----------Utils-------------------------------------------------------------------------
-bool FFTAnalyzer::Begin(CfgManager& opts, uint64* index)
+bool C2CAnalyzer::Begin(CfgManager& opts, uint64* index)
 {
 
     //---register shared FFTs
@@ -14,17 +14,17 @@ bool FFTAnalyzer::Begin(CfgManager& opts, uint64* index)
     srcInstance_ = opts.GetOpt<string>(instanceName_+".srcInstanceName");    
     channelsNames_ = opts.GetOpt<vector<string> >(instanceName_+".channelsNames");    
     fftType_ = opts.OptExist(instanceName_+".FFTType") ?
-        opts.GetOpt<string>(instanceName_+".FFTType") : "T2F";
+        opts.GetOpt<string>(instanceName_+".FFTType") : "C2C";
     bool storeFFT = opts.OptExist(instanceName_+".storeFFToutput") ?
         opts.GetOpt<bool>(instanceName_+".storeFFToutput") : false;
     for(auto& channel : channelsNames_)
     {
         if(!opts.OptExist(channel+".tUnit"))
         {
-            cout << ">>> FFTAnalyzer ERROR: configuration for channel < " << channel << " > not found." << endl;
+            cout << ">>> C2CAnalyzer ERROR: configuration for channel < " << channel << " > not found." << endl;
             return false;
         }
-        if(fftType_ == "T2F")
+        if(fftType_ == "C2C")
         {
             FFTs_[channel] = new FFTClass();
             RegisterSharedData(FFTs_[channel], channel, storeFFT);
@@ -48,8 +48,8 @@ bool FFTAnalyzer::Begin(CfgManager& opts, uint64* index)
     }
 
     //---create and register templates histograms
-    //   histograms are created with automatic binning alog Y axis
-    if(fftType_ == "T2F" && opts.OptExist(instanceName_+".makeTemplates"))
+    //   histograms are created with automatic binning along Y axis
+    if(fftType_ == "C2C" && opts.OptExist(instanceName_+".makeTemplates"))
         templatesNames_ =  opts.GetOpt<vector<string> >(instanceName_+".makeTemplates");
     for(auto& channel : channelsNames_)
     {
@@ -68,7 +68,7 @@ bool FFTAnalyzer::Begin(CfgManager& opts, uint64* index)
     }
     
     //---register output data tree if requested (default true)
-    bool storeTree = opts.OptExist(instanceName_+".storeTree") && fftType_ == "T2F" ?
+    bool storeTree = opts.OptExist(instanceName_+".storeTree") && fftType_ == "C2C" ?
         opts.GetOpt<bool>(instanceName_+".storeTree") : false;
     if(storeTree)
     {
@@ -120,12 +120,12 @@ bool FFTAnalyzer::Begin(CfgManager& opts, uint64* index)
     return true;
 }
 
-bool FFTAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& plugins, CfgManager& opts)
+bool C2CAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& plugins, CfgManager& opts)
 {
     for(auto& channel : channelsNames_)
     {
         //---FFT from time to frequency domain /// T2F
-        if(fftType_ == "T2F")
+        if(fftType_ == "C2C")
         {
             //---get WF from source instance data and reset FFT
             FFTs_[channel]->Reset();
@@ -133,6 +133,11 @@ bool FFTAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
             auto samples = wf->GetSamples();
             auto samples_norm = *samples;
             int n_samples = samples->size();
+	    double phase[n_samples];
+	    for (int i=0; i < n_samples; i++){
+	      phase[i]=0.0;
+	    }
+	    double* phasepointer = phase;
             if(opts.OptExist(instanceName_+".normalizeInput") && opts.GetOpt<bool>(instanceName_+".normalizeInput"))
             {
                 float max = *std::max_element(samples_norm.begin(), samples_norm.end());
@@ -142,11 +147,13 @@ bool FFTAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
 	    }
             //---build the FFT
             double Re[n_samples], Im[n_samples];
-            auto fftr2c = TVirtualFFT::FFT(1, &n_samples, "R2C");
-	    //cout << "samples_norm.data(): " << *samples_norm.data() << endl;
+            auto fftr2c = TVirtualFFT::FFT(1, &n_samples, "C2CFORWARD");
+	    //auto fftr2c = TVirtualFFT::FFT(1, &n_samples, "C2CBACKWARD");
+	    cout << "samples_norm.data(): " << samples_norm.data() << endl;
 	    //for(auto& sample : samples_norm)
 	    //  cout <<  "sample: " << sample << endl;
-	    fftr2c->SetPoints(samples_norm.data());
+	    //fftr2c->SetPoints(samples_norm.data());
+	    fftr2c->SetPointsComplex(samples_norm.data(),phasepointer);
             fftr2c->Transform();
             fftr2c->GetPointsComplex(Re, Im);
 	    //for(int i=0; i<500; i++)
@@ -158,7 +165,7 @@ bool FFTAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
             var_map["Ampl"] = FFTs_[channel]->GetAmplitudes()->data();
             var_map["Phase"] = FFTs_[channel]->GetPhases()->data();
             if(fftTree_ || templatesNames_.size() != 0)
-            {
+              {
                 for(int k=0; k<n_samples/2; ++k)
                 {
                     for(auto& tmpl : templatesNames_){
@@ -238,7 +245,7 @@ bool FFTAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& pl
     return true;
 }
 
-bool FFTAnalyzer::End(CfgManager& opts)
+bool C2CAnalyzer::End(CfgManager& opts)
 {
     for(auto& channel : channelsNames_)
         for(auto& tmpl : templatesNames_)

@@ -12,7 +12,7 @@
 
    =make=
 
-   =bin/H4Reco cfg/Oct2015_timing.cfg 4443=
+   =bin/H4Reco cfg/ECAL_H4_Apr2018_CATIA.cfg 10294=
 ** The cfg file
    - Comment lines start with a '#' followed by a space
    - blocks are defined within =<block>...</block>=
@@ -38,9 +38,11 @@
    - More information can be found in =plugin/Readme.org=
 ** Some examples:
    + plot WF for APD2 only: 
-     =h4->Draw("WF_val:WF_time","WF_ch==APD2")=
+     =h4->Draw("WF_val:WF_time","WF_ch==0")=
    + plot amplitude map:
-     =h4->Draw("fit_ampl[APD2]:hodoY1:hodoX1>>map(100,-10,10,100,-10,10)","","PROFCOLZ")
+     =h4->Draw("fit_ampl[0]:Y:X>>map(100,-10,10,100,-10,10)","","PROFCOLZ")=
    + time resolution:
-     =h4->Draw("fit_time[APD2]-time[MCP1]","amp_max[MCP1]>100 && fit_ampl[APD2]>700")
-     
+     =h4->Draw("fit_time[0]-time[1]","amp_max[0]>100 && fit_ampl[0]<700")=
+     =h4->Draw("fit_time[0]-time[1]")=	
+   + template plot:    
+     =h4->Draw("WF_val:WF_time","WF_ch==VFE5_2_TMPL", "", 100)

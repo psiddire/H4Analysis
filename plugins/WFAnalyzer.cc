@@ -6,7 +6,7 @@ bool WFAnalyzer::Begin(CfgManager& opts, uint64* index)
     //---inputs---
     if(!opts.OptExist(instanceName_+".srcInstanceName"))
     {
-        cout << ">>> FFTAnalyzer ERROR: no source plugin specified" << endl;
+        cout << ">>> ERROR: no source plugin specified" << endl;
         return false;
     }
     srcInstance_ = opts.GetOpt<string>(instanceName_+".srcInstanceName");
@@ -62,7 +62,7 @@ bool WFAnalyzer::Begin(CfgManager& opts, uint64* index)
     return true;
 }
 
-bool WFAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& plugins, CfgManager& opts)
+bool WFAnalyzer::ProcessEvent(const H4Tree& h4Tree, map<string, PluginBase*>& plugins, CfgManager& opts)
 {
     //---setup output event 
     int outCh=0;
@@ -74,10 +74,12 @@ bool WFAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& plu
     for(auto& channel : channelsNames_)
     {
         auto shared_data = plugins[srcInstance_]->GetSharedData(srcInstance_+"_"+channel, "", false);
-        if(shared_data.size() != 0)
+        if(shared_data.size() != 0){
             WFs_[channel] = (WFClass*)shared_data.at(0).obj;
+	    //cout << "Channel: " << channel << " WFs[channel]: " << (WFClass*)WFs_[channel] << endl;
+	}
         else
-            cout << "[WFAnalizer::" << instanceName_ << "]: channels samples not found check DigiReco step" << endl; 
+            cout << "[WFAnalyzer::" << instanceName_ << "]: channels samples not found check DigiReco step" << endl; 
     }
 
     //---compute reco variables
@@ -100,15 +102,36 @@ bool WFAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& plu
         WFBaseline baselineInfo = WFs_[channel]->SubtractBaseline();
         string max_function = opts.OptExist(channel+".signalWin", 3) ? opts.GetOpt<string>(channel+".signalWin", 3) : "pol2";
         WFFitResults interpolAmpMax = WFs_[channel]->GetInterpolatedAmpMax(-1,-1, opts.GetOpt<int>(channel+".signalWin", 2), max_function);
-        digiTree_.b_charge[outCh] = WFs_[channel]->GetIntegral(opts.GetOpt<int>(channel+".baselineInt", 0), 
-                                                               opts.GetOpt<int>(channel+".baselineInt", 1));        
-        digiTree_.b_slope[outCh] = baselineInfo.slope;
-        digiTree_.b_rms[outCh] = baselineInfo.rms;
-        digiTree_.maximum[outCh] = WFs_[channel]->GetAmpMax();
+
+	if(WFs_[channel]->GetIntegral(opts.GetOpt<int>(channel+".baselineInt", 0),opts.GetOpt<int>(channel+".baselineInt", 1)) > -500 && WFs_[channel]->GetIntegral(opts.GetOpt<int>(channel+".baselineInt", 0),opts.GetOpt<int>(channel+".baselineInt", 1)) < 500){
+	  digiTree_.b_charge[outCh] = WFs_[channel]->GetIntegral(opts.GetOpt<int>(channel+".baselineInt", 0), 
+                                                               opts.GetOpt<int>(channel+".baselineInt", 1));
+	}
+	else{
+	  continue;
+	}
+	if (baselineInfo.slope > -100 && baselineInfo.slope < 100)
+	  digiTree_.b_slope[outCh] = baselineInfo.slope;
+	else
+	  continue;
+	if (baselineInfo.rms < 100)
+	  digiTree_.b_rms[outCh] = baselineInfo.rms;
+	else
+	  continue;
+	if (WFs_[channel]->GetAmpMax() < 1000)
+	  digiTree_.maximum[outCh] = WFs_[channel]->GetAmpMax();
+	else
+	  continue;
         digiTree_.time_maximum[outCh] = WFs_[channel]->GetTimeCF(1).first;
-        digiTree_.amp_max[outCh] = interpolAmpMax.ampl;
+        if (interpolAmpMax.ampl < 1000)
+	  digiTree_.amp_max[outCh] = interpolAmpMax.ampl;
+	else
+	  continue;
         digiTree_.time_max[outCh] = interpolAmpMax.time;
-        digiTree_.chi2_max[outCh] = interpolAmpMax.chi2;
+        if (interpolAmpMax.chi2 < 10000)
+	  digiTree_.chi2_max[outCh] = interpolAmpMax.chi2;
+	else
+	  continue;
         digiTree_.charge_tot[outCh] = WFs_[channel]->GetModIntegral(opts.GetOpt<int>(channel+".baselineInt", 1), 
                                                                     WFs_[channel]->GetNSample());
         digiTree_.charge_sig[outCh] = WFs_[channel]->GetSignalIntegral(opts.GetOpt<int>(channel+".signalInt", 0), 
@@ -151,13 +174,13 @@ bool WFAnalyzer::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& plu
         //---WFs---
         if(fillWFtree)
         {
-            auto analizedWF = WFs_[channel]->GetSamples();
+            auto analyzedWF = WFs_[channel]->GetSamples();
             float tUnit = WFs_[channel]->GetTUnit();
-            for(unsigned int jSample=0; jSample<analizedWF->size(); ++jSample)
+            for(unsigned int jSample=0; jSample<analyzedWF->size(); ++jSample)
             {
                 outWFTree_.WF_ch.push_back(outCh);
                 outWFTree_.WF_time.push_back(jSample*tUnit);
-                outWFTree_.WF_val.push_back(analizedWF->at(jSample));
+                outWFTree_.WF_val.push_back(analyzedWF->at(jSample));
             }
         }
         //---increase output tree channel counter

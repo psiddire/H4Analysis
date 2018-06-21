@@ -25,7 +25,7 @@ bool DigitizerReco::Begin(CfgManager& opts, uint64* index)
     return true;
 }
 
-bool DigitizerReco::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& plugins, CfgManager& opts)
+bool DigitizerReco::ProcessEvent(const H4Tree& h4Tree, map<string, PluginBase*>& plugins, CfgManager& opts)
 {        
     //---read the digitizer
     //---set time reference from digitized trigger
@@ -39,30 +39,33 @@ bool DigitizerReco::ProcessEvent(const H4Tree& event, map<string, PluginBase*>& 
     //         break;
     //     }
     // }
-    
     //---user channels
     bool evtStatus = true;
     for(auto& channel : channelsNames_)
     {
         //---reset and read new WFs
         WFs[channel]->Reset();
-        unsigned int spill = event.spillNumber;
+        unsigned int spill = h4Tree.spillNumber;
         unsigned int digiBd = opts.GetOpt<unsigned int>(channel+".digiBoard");
         unsigned int digiGr = opts.GetOpt<unsigned int>(channel+".digiGroup");
         unsigned int digiCh = opts.GetOpt<unsigned int>(channel+".digiChannel");
-        int offset = event.digiMap.at(make_tuple(spill, digiBd, digiGr, digiCh));
-        for(int iSample=offset; iSample<offset+nSamples_[channel]; ++iSample)
+        int offset = h4Tree.digiMap.at(make_tuple(spill, digiBd, digiGr, digiCh));
+	//cout << "offset: " << offset << endl;
+	for(int iSample=offset; iSample<offset+nSamples_[channel]; ++iSample)
         {
             //---H4DAQ bug: sometimes ADC value is out of bound.
             //---skip everything if one channel is bad
-            if(event.digiSampleValue[iSample] > 1e6)
+            if(h4Tree.digiSampleValue[iSample] > 1e6)
             {
                 evtStatus = false;
                 WFs[channel]->AddSample(4095);
             }
-            else
-                WFs[channel]->AddSample(event.digiSampleValue[iSample]);
-        }
+            else{
+                WFs[channel]->AddSample(h4Tree.digiSampleValue[iSample]);
+		//cout << "digiSampleValue: " << h4Tree.digiSampleValue[iSample] << endl;
+		//cout << "WFs[channel]: " << *() << endl;
+	    }
+	}
         if(opts.OptExist(channel+".useTrigRef") && opts.GetOpt<bool>(channel+".useTrigRef"))
             WFs[channel]->SetTrigRef(trigRef);
     }

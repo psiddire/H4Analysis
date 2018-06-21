@@ -19,10 +19,12 @@ void PositionTree::Init()
     Y = new float[n_planes];
     nFibresOnX = new int[n_planes];
     nFibresOnY = new int[n_planes];
+    //fibers = new int[n_planes*2];
     //---position branches
     tree_->Branch("n_planes", &n_planes, "n_planes/I");
     tree_->Branch("X", X, "X[n_planes]/F");
     tree_->Branch("Y", Y, "Y[n_planes]/F");
     tree_->Branch("nFibresOnX", nFibresOnX, "nFibresOnX[n_planes]/I");
     tree_->Branch("nFibresOnY", nFibresOnY, "nFibresOnY[n_planes]/I");
+    //    tree_->Branch("fibers", fibers, "fibers[n_planes*2]/I");
 }
